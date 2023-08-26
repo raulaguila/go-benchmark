@@ -1,5 +1,5 @@
 <h1 align="center">
-    Benchmark testing of Go web frameworks
+    Go Benchmark
 </h1>
 
 <p align="center">Benchmark of the main Go web frameworks.</p>
