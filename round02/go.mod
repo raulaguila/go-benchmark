@@ -1,4 +1,4 @@
-module github.com/raulaguila/go-benchmark/round01
+module github.com/raulaguila/go-benchmark/round02
 
 go 1.21
 
