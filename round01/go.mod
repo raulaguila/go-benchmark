@@ -1,4 +1,4 @@
-module github.com/raulaguila/go-utility/web-framework-benchmark/round01
+module github.com/raulaguila/go-benchmark/round01
 
 go 1.21
 
