@@ -33,6 +33,7 @@
 
 <img align="right" src="round02/screenshot/bench.png" width="600" height="220" />
 
+- [savsgio/atreugo v](https://github.com/savsgio/atreugo)
 - [gin-gonic/gin v](https://github.com/gin-gonic/gin)
 - [go-chi/chi v](https://github.com/go-chi/chi)
 - [gofiber/fiber v](https://github.com/gofiber/fiber)
