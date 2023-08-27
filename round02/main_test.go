@@ -15,12 +15,12 @@ const (
 )
 
 type bench struct {
-	name           string
-	param          string
-	url            string
-	body           []byte
-	statusExpected int
-	bodyExpected   *ObjectExample
+	testName       string
+	requestParam   string
+	requestURL     string
+	requestBody    []byte
+	expectedStatus int
+	expectedBody   *ObjectExample
 }
 
 func makeRequest(param, path string, body []byte) (int, *ObjectExample) {
@@ -52,21 +52,21 @@ func BenchmarkWebFramework(b *testing.B) {
 	} {
 		url := localhost + test[1] + endpoint
 		tests = append(tests,
-			bench{name: "all_good_" + test[0], param: paramOK, statusExpected: http.StatusOK, url: url, body: objJson, bodyExpected: obj},
-			bench{name: "wrong_param_" + test[0], param: paramNG, statusExpected: http.StatusBadRequest, url: url, body: objJson, bodyExpected: objEmpty},
-			bench{name: "wrong_body_" + test[0], param: paramOK, statusExpected: http.StatusBadRequest, url: url, body: nil, bodyExpected: objEmpty},
+			bench{testName: "all_good_" + test[0], requestParam: paramOK, expectedStatus: http.StatusOK, requestURL: url, requestBody: objJson, expectedBody: obj},
+			bench{testName: "wrong_param_" + test[0], requestParam: paramNG, expectedStatus: http.StatusBadRequest, requestURL: url, requestBody: objJson, expectedBody: objEmpty},
+			bench{testName: "wrong_body_" + test[0], requestParam: paramOK, expectedStatus: http.StatusBadRequest, requestURL: url, requestBody: nil, expectedBody: objEmpty},
 		)
 	}
 
 	startFrameworks()
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	for u, test := range tests {
-		b.Run(test.name, func(bf *testing.B) {
+		b.Run(test.testName, func(bf *testing.B) {
 			bf.ReportAllocs()
 			for i := 0; i < bf.N; i++ {
-				if responseStatus, responseBody := makeRequest(test.param, test.url, test.body); responseStatus != test.statusExpected || *responseBody != *test.bodyExpected {
-					bf.Errorf("%v - Result not expected: \n\t\tstatusExpected=%v, statusReceived=%v, \n\t\tbodyExpected=%v, bodyReceived=%v \n\n", test.name, test.statusExpected, responseStatus, *test.bodyExpected, *responseBody)
+				if responseStatus, responseBody := makeRequest(test.requestParam, test.requestURL, test.requestBody); responseStatus != test.expectedStatus || *responseBody != *test.expectedBody {
+					bf.Errorf("%v - Result not expected: \n\t\tstatusExpected=%v, statusReceived=%v, \n\t\tbodyExpected=%v, bodyReceived=%v \n\n", test.testName, test.expectedStatus, responseStatus, *test.expectedBody, *responseBody)
 					return
 				}
 			}
