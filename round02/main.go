@@ -15,7 +15,21 @@ import (
 	"github.com/savsgio/atreugo/v11"
 )
 
-const paramOK string = "paramOK"
+const (
+	paramOK    string = "paramOK"
+	paramName  string = "channel"
+	endpoint   string = "/bench"
+	endpoint01 string = endpoint + "/{" + paramName + "}"
+	endpoint02 string = endpoint + "/:" + paramName
+
+	ginPort     string = ":8080"
+	chiPort     string = ":8081"
+	fiberPort   string = ":8082"
+	gorillaPort string = ":8083"
+	echoPort    string = ":8084"
+	httpPort    string = ":8085"
+	atreugoPort string = ":8086"
+)
 
 type ObjectExample struct {
 	ID   string `json:"id"`
@@ -45,8 +59,8 @@ func main() {
 func initGinGonic() {
 	gin.SetMode(gin.ReleaseMode)
 	app := gin.New()
-	app.POST("/bench/:channel", func(c *gin.Context) {
-		if value, ok := c.Params.Get("channel"); !ok || value != paramOK {
+	app.POST(endpoint02, func(c *gin.Context) {
+		if value, ok := c.Params.Get(paramName); !ok || value != paramOK {
 			c.Status(http.StatusBadRequest)
 			return
 		}
@@ -60,26 +74,19 @@ func initGinGonic() {
 		c.JSON(http.StatusOK, objectExample)
 	})
 
-	app.Run(":8080")
+	app.Run(ginPort)
 }
 
 func initGoChi() {
 	app := chi.NewRouter()
-	app.Post("/bench/{channel}", func(w http.ResponseWriter, r *http.Request) {
-		channel := chi.URLParam(r, "channel")
-		if channel != paramOK {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		b, err := io.ReadAll(r.Body)
-		if err != nil {
+	app.Post(endpoint01, func(w http.ResponseWriter, r *http.Request) {
+		if channel := chi.URLParam(r, paramName); channel != paramOK {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		objectExample := new(ObjectExample)
-		if err := json.Unmarshal(b, objectExample); err != nil {
+		if err := json.NewDecoder(r.Body).Decode(objectExample); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -89,15 +96,15 @@ func initGoChi() {
 		w.Write(jsonValue)
 	})
 
-	http.ListenAndServe(":8082", app)
+	http.ListenAndServe(chiPort, app)
 }
 
 func initGoFiber() {
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
 	})
-	app.Post("/bench/:channel", func(c *fiber.Ctx) error {
-		if value := c.Params("channel"); value != paramOK {
+	app.Post(endpoint02, func(c *fiber.Ctx) error {
+		if value := c.Params(paramName); value != paramOK {
 			return c.Status(http.StatusBadRequest).Send(nil)
 		}
 
@@ -111,13 +118,13 @@ func initGoFiber() {
 		return err
 	})
 
-	app.Listen(":8083")
+	app.Listen(fiberPort)
 }
 
 func initGorillaMux() {
 	app := mux.NewRouter()
-	app.HandleFunc("/bench/{channel}", func(w http.ResponseWriter, r *http.Request) {
-		if value, ok := mux.Vars(r)["channel"]; !ok || value != paramOK {
+	app.HandleFunc(endpoint01, func(w http.ResponseWriter, r *http.Request) {
+		if value, ok := mux.Vars(r)[paramName]; !ok || value != paramOK {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -139,15 +146,15 @@ func initGorillaMux() {
 		w.Write(jsonValue)
 	}).Methods("POST")
 
-	http.ListenAndServe(":8081", app)
+	http.ListenAndServe(gorillaPort, app)
 }
 
 func initGoEcho() {
 	app := echo.New()
 	app.HideBanner = true
 	app.HidePort = true
-	app.POST("/bench/:channel", func(c echo.Context) error {
-		if value := c.Param("channel"); value != paramOK {
+	app.POST(endpoint02, func(c echo.Context) error {
+		if value := c.Param(paramName); value != paramOK {
 			return c.JSON(http.StatusBadRequest, nil)
 		}
 
@@ -159,15 +166,15 @@ func initGoEcho() {
 		return c.JSON(http.StatusOK, objectExample)
 	})
 
-	app.Start(":8084")
+	app.Start(echoPort)
 }
 
 func initHttpServerMux() {
 	httpmux := http.NewServeMux()
-	httpmux.HandleFunc("/bench/", func(w http.ResponseWriter, r *http.Request) {
+	httpmux.HandleFunc(endpoint+"/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "POST":
-			if value := strings.TrimPrefix(r.URL.Path, "/bench/"); value != paramOK {
+			if value := strings.TrimPrefix(r.URL.Path, endpoint+"/"); value != paramOK {
 				w.WriteHeader(http.StatusBadRequest)
 				w.Write(nil)
 				return
@@ -183,20 +190,19 @@ func initHttpServerMux() {
 			w.WriteHeader(http.StatusOK)
 			resp, _ := json.Marshal(objectExample)
 			w.Write(resp)
-			return
 		}
 	})
-	http.ListenAndServe(":8085", httpmux)
+	http.ListenAndServe(httpPort, httpmux)
 }
 
 func initAtreugo() {
 	server := atreugo.New(atreugo.Config{
-		Addr:  "0.0.0.0:8086",
+		Addr:  "0.0.0.0" + atreugoPort,
 		Debug: false,
 	})
 
-	server.POST("/bench/{channel}", func(c *atreugo.RequestCtx) error {
-		if value := c.UserValue("channel").(string); value != paramOK {
+	server.POST(endpoint01, func(c *atreugo.RequestCtx) error {
+		if value := c.UserValue(paramName).(string); value != paramOK {
 			c.SetStatusCode(http.StatusBadRequest)
 			return nil
 		}
