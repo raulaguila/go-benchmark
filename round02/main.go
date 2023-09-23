@@ -113,9 +113,7 @@ func initGoFiber() {
 			return c.Status(http.StatusBadRequest).Send(nil)
 		}
 
-		err := c.Status(http.StatusOK).JSON(objectExample)
-		c.Set("content-type", "application/json; charset=utf-8")
-		return err
+		return c.Status(http.StatusOK).JSON(objectExample)
 	})
 
 	app.Listen(fiberPort)

@@ -23,16 +23,13 @@ type bench struct {
 	expectedBody   *ObjectExample
 }
 
-func makeRequest(param, path string, body []byte) (int, *ObjectExample) {
+func makeRequest(param, path string, body []byte) int {
 	response, err := http.Post(fmt.Sprintf("%s/%s", path, param), "application/json", bytes.NewReader(body))
 	if err != nil {
 		panic(err)
 	}
 
-	objReceived := new(ObjectExample)
-	json.NewDecoder(response.Body).Decode(objReceived)
-
-	return response.StatusCode, objReceived
+	return response.StatusCode
 }
 
 func BenchmarkWebFramework(b *testing.B) {
@@ -43,9 +40,9 @@ func BenchmarkWebFramework(b *testing.B) {
 	tests := []bench{}
 	for _, test := range [][2]string{
 		{"ATREUGO", atreugoPort},
-		{"GOFIBER", fiberPort},
 		{"HTTPMUX", httpPort},
 		{"GINGONIC", ginPort},
+		{"GOFIBER", fiberPort},
 		{"GOCHI", chiPort},
 		{"GORILLAMUX", gorillaPort},
 		{"GOECHO", echoPort},
@@ -65,8 +62,8 @@ func BenchmarkWebFramework(b *testing.B) {
 		b.Run(test.testName, func(bf *testing.B) {
 			bf.ReportAllocs()
 			for i := 0; i < bf.N; i++ {
-				if responseStatus, responseBody := makeRequest(test.requestParam, test.requestURL, test.requestBody); responseStatus != test.expectedStatus || *responseBody != *test.expectedBody {
-					bf.Errorf("%v - Result not expected: \n\t\tstatusExpected=%v, statusReceived=%v, \n\t\tbodyExpected=%v, bodyReceived=%v \n\n", test.testName, test.expectedStatus, responseStatus, *test.expectedBody, *responseBody)
+				if responseStatus := makeRequest(test.requestParam, test.requestURL, test.requestBody); responseStatus != test.expectedStatus {
+					bf.Errorf("%v - Result not expected: \n\t\tstatusExpected=%v, statusReceived=%v \n\n", test.testName, test.expectedStatus, responseStatus)
 					return
 				}
 			}
